@@ -42,6 +42,7 @@ grubの設定を編集してカーネルパラメータを追加する。
 $ sudo vim /etc/default/grub
 GRUB_CMDLINE_LINUX=""  #ここを
 GRUB_CMDLINE_LINUX="hugepages=1024"  #こうする
+GRUB_CMDLINE_LINUX="hugepages=64"  #VMのメモリが少ない場合
 
 $ sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
@@ -53,7 +54,7 @@ $ sudo grub-mkconfig -o /boot/grub/grub.cfg
 Hugetlbfsをマウントする。
 
 ```
-$ mkdir -p /mnt/huge
+$ sudo mkdir -p /mnt/huge
 $ sudo vim /etc/fstab
 ...末尾に追記
 nodev /mnt/huge hugetlbfs defaults 0 0
