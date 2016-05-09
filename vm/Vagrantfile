@@ -1,19 +1,23 @@
 
 Vagrant.configure(2) do |config|
   config.vm.box = "arch"
+  # /* config.vm.synced_folder "", "/vagrant" */
 
   config.vm.define "master" do |master|
+  	  master.vm.synced_folder "../sync/master", "/home/vagrant/Desktop/"
       master.vm.hostname = "master.vagrant"
 	  master.vm.network "private_network", ip: "192.168.33.10", virtualbox__intnet: "intnet"
 	  master.vm.network "private_network", ip: "192.168.33.11", virtualbox__intnet: "intnet"
   end
 
   config.vm.define "host1" do |host1|
+  	  host1.vm.synced_folder "../sync/host1", "/home/vagrant/Desktop/"
       host1.vm.hostname = "host1.vagrant"
 	  host1.vm.network "private_network", ip: "192.168.33.111", virtualbox__intnet: "intnet"
   end
 
   config.vm.define "host2" do |host2|
+  	  host2.vm.synced_folder "../sync/host2", "/home/vagrant/Desktop/"
       host2.vm.hostname = "host2.vagrant"
 	  host2.vm.network "private_network", ip: "192.168.33.222", virtualbox__intnet: "intnet"
   end
