@@ -1,3 +1,7 @@
+
+# Vagrant depend files
+.vagrant/
+
 # Object files
 *.o
 *.ko
