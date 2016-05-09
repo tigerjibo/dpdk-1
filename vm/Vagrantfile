@@ -16,11 +16,11 @@ Vagrant.configure(2) do |config|
 	  host1.vm.network "private_network", ip: "192.168.33.111", virtualbox__intnet: "intnet"
   end
 
-  config.vm.define "host2" do |host2|
-  	  host2.vm.synced_folder "../sync/host2", "/home/vagrant/Desktop/"
-      host2.vm.hostname = "host2.vagrant"
-	  host2.vm.network "private_network", ip: "192.168.33.222", virtualbox__intnet: "intnet"
-  end
+  # config.vm.define "host2" do |host2|
+  # 	  host2.vm.synced_folder "../sync/host2", "/home/vagrant/Desktop/"
+  #     host2.vm.hostname = "host2.vagrant"
+  #     host2.vm.network "private_network", ip: "192.168.33.222", virtualbox__intnet: "intnet"
+  # end
 
   # config.vm.network "forwarded_port", guest: 80, host: 8080
   # config.vm.network "public_network"
