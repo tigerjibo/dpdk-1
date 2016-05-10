@@ -1,32 +1,35 @@
 
 
+
 Vagrant.configure(2) do |config|
 
   config.vm.box = "bento/ubuntu-14.04"
-  config.vm.provider "virtualbox" do |vb|
-      vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "2", "--ioapic", "on"]
-  end
 
   config.vm.define "master" do |master|
       master.vm.hostname = "master.vagrant"
 	  master.vm.network "private_network", ip: "192.168.33.10", virtualbox__intnet: "in"
 	  master.vm.network "private_network", ip: "192.168.33.11", virtualbox__intnet: "in"
+
+      config.vm.provider "virtualbox" do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "2", "--ioapic", "on"]
+      end
+
+	  master.vm.provision "shell", inline: <<-SHELL
+	      sudo apt-get update
+	      sudo apt-get install -y git vim zsh tmux
+	      sudo apt-get install -y linux-headers-`uname -r`
+ 	  SHELL
   end
 
-  # config.vm.provider "virtualbox" do |vb|
-  #   # Display the VirtualBox GUI when booting the machine
-  #   vb.gui = true
-  #
-  #   # Customize the amount of memory on the VM:
-  #   vb.memory = "1024"
-  # end
+  config.vm.define "host1" do |host1|
+      host1.vm.hostname = "host1.vagrant"
+	  host1.vm.network "private_network", ip: "192.168.33.111", virtualbox__intnet: "in"
+  end
 
-  # Enable provisioning with a shell script. Additional provisioners such as
-  # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
-  # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   sudo apt-get update
-  #   sudo apt-get install -y apache2
-  # SHELL
-  
+  config.vm.define "host2" do |host2|
+      host2.vm.hostname = "host1.vagrant"
+	  host2.vm.network "private_network", ip: "192.168.33.222", virtualbox__intnet: "in"
+  end
+
+
 end
