@@ -13,6 +13,7 @@ vagrant上でDPDKを使った開発を行うときの環境一式。どのホス
  - gcc: version >=4.5.x
  - libc headers
  - Linux Kernel Headers (pacmanではlinux-headersというパッケージ)
+ - python2.6 or 2.7 (Portバインドスクリプトで使う, 3系だとうまく動かないので注意)
 
 
 ## 2. カーネルコンフィグを調べる
@@ -33,6 +34,7 @@ OK!
 ```
 
 
+
 ## 3. Hugepagesの有効化
 
 grubの設定を編集してカーネルパラメータを追加する。
@@ -46,6 +48,7 @@ GRUB_CMDLINE_LINUX="hugepages=64"  #VMのメモリが少ない場合
 
 $ sudo grub-mkconfig -o /boot/grub/grub.cfg
 ```
+
 
 これで次回起動時にHugepagesが有効になる。
 
@@ -61,6 +64,7 @@ nodev /mnt/huge hugetlbfs defaults 0 0
 ```
 
 これで次回起動時にHugepagesを触るためのHugetlbfsがマウントされる。
+
 
 
 
