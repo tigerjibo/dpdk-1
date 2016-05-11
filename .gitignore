@@ -1,6 +1,7 @@
 
 # Vagrant depend files
 .vagrant/
+*.map
 
 # Object files
 *.o
