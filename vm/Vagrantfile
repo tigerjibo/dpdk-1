@@ -6,9 +6,10 @@ Vagrant.configure(2) do |config|
   config.vm.box = "bento/ubuntu-14.04"
 
   config.vm.define "master" do |master|
+      master.vm.synced_folder "../myapp", "/home/vagrant/app"
       master.vm.hostname = "master.vagrant"
-	  master.vm.network "private_network", ip: "192.168.33.10", virtualbox__intnet: "in"
-	  master.vm.network "private_network", ip: "192.168.33.11", virtualbox__intnet: "in"
+	  master.vm.network "private_network", ip: "192.168.11.10", virtualbox__intnet: "in1"
+	  master.vm.network "private_network", ip: "192.168.22.10", virtualbox__intnet: "in2"
 
       config.vm.provider "virtualbox" do |vb|
           vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "2", "--ioapic", "on"]
@@ -22,13 +23,15 @@ Vagrant.configure(2) do |config|
   end
 
   config.vm.define "host1" do |host1|
+  	  host1.vm.box = "arch0"
       host1.vm.hostname = "host1.vagrant"
-	  host1.vm.network "private_network", ip: "192.168.33.111", virtualbox__intnet: "in"
+	  host1.vm.network "private_network", ip: "192.168.11.111", virtualbox__intnet: "in1"
   end
 
   config.vm.define "host2" do |host2|
-      host2.vm.hostname = "host1.vagrant"
-	  host2.vm.network "private_network", ip: "192.168.33.222", virtualbox__intnet: "in"
+  	  host2.vm.box = "arch0"
+      host2.vm.hostname = "host2.vagrant"
+	  host2.vm.network "private_network", ip: "192.168.22.222", virtualbox__intnet: "in2"
   end
 
 
