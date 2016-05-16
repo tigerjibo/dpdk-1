@@ -22,10 +22,10 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE      32
 
+
 static const struct rte_eth_conf port_conf_default = {
     .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
 };
-
 
 
 static void hex(const void *buffer, size_t bufferlen);
@@ -33,6 +33,7 @@ static void hex(const void *buffer, size_t bufferlen);
 
 static void print_rte_mbuf(struct rte_mbuf* mbuf)
 {
+
     printf("RTE Memory Buffer \n");
     if (mbuf) {
         printf(" - buf_addr    : %p \n", mbuf->buf_addr);
@@ -188,6 +189,8 @@ int main(int argc, char** argv)
         printf("WARNING: Too many lcores enabled. Only 1 used. \n");
 
     lcore_main();
+
+    rte_log(RTE_LOG_DEBUG, RTE_LOGTYPE_EAL, "test test \n");
 
     DEBUG("finish");
     return 0;
