@@ -31,40 +31,40 @@ static const struct rte_eth_conf port_conf_default = {
 static void hex(const void *buffer, size_t bufferlen);
 
 
-static void print_rte_mbuf(struct rte_mbuf* mbuf)
-{
-
-    printf("RTE Memory Buffer \n");
-    if (mbuf) {
-        printf(" - buf_addr    : %p \n", mbuf->buf_addr);
-        printf(" - buf_physaddr: 0x%08lx \n", (uint64_t)mbuf->buf_physaddr);
-        printf(" - buf_len     : %d \n", mbuf->buf_len);
-
-        printf(" - refcnt      : %d \n", mbuf->refcnt);
-        
-        printf(" - nb_segs     : %u \n", mbuf->nb_segs );
-        printf(" - port        : %u \n", mbuf->port    );
-        printf(" - ol_flags    : %lu \n", mbuf->ol_flags);
-        printf(" - pkt_len     : %u \n", mbuf->pkt_len );
-        printf(" - data_len    : %u \n", mbuf->data_len);
-        printf(" - vlan_tci    : %u \n", mbuf->vlan_tci);
-
-        printf(" - hash.rss    : %u \n", mbuf->hash.rss);
-
-        printf(" - pool        : %p \n", mbuf->pool);
-        printf(" - pool->name  : %s \n", mbuf->pool->name);
-        printf(" - l2_type     : %u \n", mbuf->l2_type);
-        printf(" - l3_type     : %u \n", mbuf->l3_type);
-        printf(" - l4_type     : %u \n", mbuf->l4_type);
-        printf(" - tx_offload  : %ld \n", mbuf->tx_offload);
-        printf(" - l2_len      : %d \n", mbuf->l2_len);
-        printf(" - l3_len      : %d \n", mbuf->l3_len);
-        printf(" - l4_len      : %d \n", mbuf->l4_len);
-        printf(" - tso_segsz   : %d \n", mbuf->tso_segsz);
-        printf(" - outer_l2_len: %d \n", mbuf->outer_l2_len);
-        printf(" - outer_l3_len: %d \n", mbuf->outer_l3_len);
-    }
-}
+/* static void print_rte_mbuf(struct rte_mbuf* mbuf) */
+/* { */
+/*  */
+/*     printf("RTE Memory Buffer \n"); */
+/*     if (mbuf) { */
+/*         printf(" - buf_addr    : %p \n", mbuf->buf_addr); */
+/*         printf(" - buf_physaddr: 0x%08lx \n", (uint64_t)mbuf->buf_physaddr); */
+/*         printf(" - buf_len     : %d \n", mbuf->buf_len); */
+/*  */
+/*         printf(" - refcnt      : %d \n", mbuf->refcnt); */
+/*          */
+/*         printf(" - nb_segs     : %u \n", mbuf->nb_segs ); */
+/*         printf(" - port        : %u \n", mbuf->port    ); */
+/*         printf(" - ol_flags    : %lu \n", mbuf->ol_flags); */
+/*         printf(" - pkt_len     : %u \n", mbuf->pkt_len ); */
+/*         printf(" - data_len    : %u \n", mbuf->data_len); */
+/*         printf(" - vlan_tci    : %u \n", mbuf->vlan_tci); */
+/*  */
+/*         printf(" - hash.rss    : %u \n", mbuf->hash.rss); */
+/*  */
+/*         printf(" - pool        : %p \n", mbuf->pool); */
+/*         printf(" - pool->name  : %s \n", mbuf->pool->name); */
+/*         printf(" - l2_type     : %u \n", mbuf->l2_type); */
+/*         printf(" - l3_type     : %u \n", mbuf->l3_type); */
+/*         printf(" - l4_type     : %u \n", mbuf->l4_type); */
+/*         printf(" - tx_offload  : %ld \n", mbuf->tx_offload); */
+/*         printf(" - l2_len      : %d \n", mbuf->l2_len); */
+/*         printf(" - l3_len      : %d \n", mbuf->l3_len); */
+/*         printf(" - l4_len      : %d \n", mbuf->l4_len); */
+/*         printf(" - tso_segsz   : %d \n", mbuf->tso_segsz); */
+/*         printf(" - outer_l2_len: %d \n", mbuf->outer_l2_len); */
+/*         printf(" - outer_l3_len: %d \n", mbuf->outer_l3_len); */
+/*     } */
+/* } */
 
 static __attribute((noreturn)) void lcore_main(void)
 {
@@ -89,6 +89,17 @@ static __attribute((noreturn)) void lcore_main(void)
             if (unlikely(num_rx == 0))
                 continue;
 
+            uint16_t i;
+            for (i=0; i<num_rx; i++) {
+                printf("Received Packet!!! pkt_len=%d \n", bufs[i]->pkt_len);
+                hex(     rte_pktmbuf_mtod(bufs[i], void*) ,
+                        rte_pktmbuf_data_len(bufs[i])     );
+                /* hex(     (void*)(char*)bufs[i]->buf_addr + bufs->data_off , */
+                /*         bufs[i]->pkt_len     ); */
+                /* print_rte_mbuf(bufs[i]); */
+            }
+
+
             const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
             printf("Reflect %d packet !! \n", num_rx);
             if (unlikely(num_tx < num_rx)) {
@@ -97,12 +108,6 @@ static __attribute((noreturn)) void lcore_main(void)
                     rte_pktmbuf_free(bufs[buf]);
             }
 
-            uint16_t i;
-            for (i=0; i<num_rx; i++) {
-                printf("Received Packet!!! pkt_len=%d \n", bufs[i]->pkt_len);
-                /* hex(bufs[i], sizeof(struct rte_mbuf)); */
-                /* print_rte_mbuf(bufs[i]); */
-            }
         }
     }
 }
@@ -174,8 +179,10 @@ int main(int argc, char** argv)
     if (num_ports < 1)
         rte_exit(EXIT_FAILURE, "rte_eth_dev_count()");
     
-    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create("MBUF_POOL_SLANK", NUM_MBUFS * num_ports, 
+    struct rte_mempool* mbuf_pool = rte_pktmbuf_pool_create(
+            "MBUF_POOL_SLANK", NUM_MBUFS * num_ports, 
             MBUF_CACHE_SIZE, 0, RTE_MBUF_DEFAULT_BUF_SIZE, rte_socket_id());  
+
     if (mbuf_pool == NULL)
         rte_exit(EXIT_FAILURE, "rtembuf_pool_create()");
 
