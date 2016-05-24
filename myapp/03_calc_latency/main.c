@@ -22,7 +22,6 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE      32
 
-static void hex(const void *buffer, size_t bufferlen);
 
 static const struct rte_eth_conf port_conf_default = {
     .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
@@ -42,10 +41,7 @@ static uint16_t add_timestamps(uint8_t port __rte_unused, uint16_t qidx __rte_un
 	unsigned i;
 	uint64_t now = rte_rdtsc();
 
-    static int count = 0;
 	for (i = 0; i < nb_pkts; i++) {
-        printf("%d: recieved now: %lu \n",count, now);
-        count++;
 		pkts[i]->udata64 = now;
     }
 	return nb_pkts;
@@ -58,21 +54,15 @@ static uint16_t calc_latency(uint8_t port __rte_unused, uint16_t qidx __rte_unus
 	uint64_t now = rte_rdtsc();
 	unsigned i;
 
-    static int count = 0;
 	for (i = 0; i < nb_pkts; i++) {
-        printf("%d: sent now    : %lu \n",count, now);
-        printf("%d: micro ltncy : %lu \n", count, now-pkts[i]->udata64);
-        count++;
 		cycles += now - pkts[i]->udata64;
     }
 	latency_numbers.total_cycles += cycles;
 	latency_numbers.total_pkts += nb_pkts;
 
-    printf("Latency = %"PRIu64" cycles\n",
-            latency_numbers.total_cycles / latency_numbers.total_pkts);
-	if (latency_numbers.total_pkts > (100 * 1000 * 1000ULL)) {
-		printf("Latency = %"PRIu64" cycles\n",
-		latency_numbers.total_cycles / latency_numbers.total_pkts);
+	if (latency_numbers.total_pkts > (1000 * 1000ULL)) {
+		printf("Latency = %lu cycles\n",
+		    latency_numbers.total_cycles / latency_numbers.total_pkts);
 		latency_numbers.total_cycles = latency_numbers.total_pkts = 0;
 	}
 	return nb_pkts;
@@ -94,30 +84,20 @@ static __attribute((noreturn)) void lcore_main(void)
 
 
     for (;;) {
-        
+        struct rte_mbuf* bufs[BURST_SIZE];
         for (port=0; port<num_ports; port++) {
-            struct rte_mbuf* bufs[BURST_SIZE];
             const uint16_t num_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
 
             if (unlikely(num_rx == 0))
                 continue;
 
-            uint16_t i;
-            for (i=0; i<num_rx; i++) {
-                /* printf("Received Packet!!! pkt_len=%d \n", bufs[i]->pkt_len); */
-                /* hex(     rte_pktmbuf_mtod(bufs[i], void*) , */
-                /*         rte_pktmbuf_data_len(bufs[i])     ); */
-            }
-
-
             const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
-            /* printf("Reflect %d packet !! \n", num_rx); */
+
             if (unlikely(num_tx < num_rx)) {
                 uint16_t buf;
                 for (buf=num_tx; buf<num_rx; buf++)
                     rte_pktmbuf_free(bufs[buf]);
             }
-
         }
     }
 }
@@ -175,7 +155,6 @@ static int port_init(uint8_t port, struct rte_mempool* mbuf_pool)
 }
 
 
-#include <time.h>
 int main(int argc, char** argv)
 {
 
@@ -183,11 +162,6 @@ int main(int argc, char** argv)
 	if (ret < 0)
 		rte_exit(EXIT_FAILURE, "rte_eal_init() failed\n");
 
-
-
-
-    printf("\n\n\n");
-    DEBUG("start");
 
     uint32_t num_ports = rte_eth_dev_count();
     printf("%d ports found  \n", num_ports);
@@ -211,44 +185,9 @@ int main(int argc, char** argv)
         printf("WARNING: Too many lcores enabled. Only 1 used. \n");
 
     lcore_main();
-
-    rte_log(RTE_LOG_DEBUG, RTE_LOGTYPE_EAL, "test test \n");
-
-    DEBUG("finish");
     return 0;
 }
 
 
-
-static void hex(const void *buffer, size_t bufferlen) {
-    const uint8_t *data = (const uint8_t*)buffer;
-    size_t row = 0;
-    while (bufferlen > 0) {
-        printf("%04zx:   ", row);
-
-        size_t i;
-        size_t n;
-        if (bufferlen < 16) n = bufferlen;
-        else                n = 16;
-
-        for (i = 0; i < n; i++) {
-            if (i == 8) printf(" ");
-            printf(" %02x", data[i]);
-        }
-        for (i = n; i < 16; i++) {
-            printf("   ");
-        }
-        printf("   ");
-        for (i = 0; i < n; i++) {
-            if (i == 8) printf("  ");
-            uint8_t c = data[i];
-            if (!(0x20 <= c && c <= 0x7e)) c = '.';
-            printf("%c", c);
-        }
-        printf("\n");
-        bufferlen -= n;
-        data += n;
-    }
-}
 
 

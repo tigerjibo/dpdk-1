@@ -23,9 +23,13 @@
 #define DEBUG(s) fprintf(stderr, "[%s:%d] %s\n", __func__, __LINE__, s)
 
 
-const char* dev = "enp3s0";
+const char* dev = "enp3s0"; // IntelNIC
 
 
+static struct {
+    uint64_t total_cycles;
+    uint64_t total_pkts;
+} latency_numbers;
 
 
 
@@ -41,7 +45,6 @@ int main(void)
         perror("socket");
         exit(-1);
     }
-    DEBUG("opened socket");
 
     memset(&ifreq, 0, sizeof(ifreq));
     strncpy(ifreq.ifr_name, dev, sizeof(ifreq.ifr_name)-1);
@@ -50,7 +53,6 @@ int main(void)
         perror("ioctl");
         exit(-1);
     }
-    DEBUG("get ifindex");
 
     sa.sll_family = AF_PACKET;
     sa.sll_protocol = htonl(ETH_P_ALL);
@@ -60,7 +62,6 @@ int main(void)
         perror("bind");
         exit(-1);
     }
-    DEBUG("binded to device");
 
     res = ioctl(fd, SIOCGIFFLAGS, &ifreq);
     if (res < 0) {
@@ -73,31 +74,19 @@ int main(void)
         perror("ioctl");
         exit(-1);
     }
-    DEBUG("set promisc");
 
-    printf("fd is ready %d \n", fd);
-    /* uint8_t buf[1000]; */
-    /* memset(buf, 0xff, sizeof(buf)); */
-    /* res = write(fd, buf, sizeof(buf)); */
-    /* if (res < 0) { */
-    /*     perror("write"); */
-    /*     exit(-1); */
-    /* } */
     
     int count;
     for (count=0; ; count++) {
         
         /* const uint16_t num_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE); */
-        printf("test \n");
         uint8_t buf[1000];
         res = read(fd, buf, sizeof(buf));
-        printf("test \n");
         if (res < 0) {
             perror("read");
             exit(-1);
         }
 	    uint64_t before = rte_rdtsc();
-        printf("recv \n");
 
         /* const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx); */
         res = write(fd, buf, res);
@@ -106,11 +95,15 @@ int main(void)
             exit(-1);
         }
 	    uint64_t after = rte_rdtsc();
-        printf("send \n");
+        latency_numbers.total_cycles += after - before;
+        latency_numbers.total_pkts   += 1;
 
-        printf("%d: micro ltncy : %lu \n", count, after-before);
+        if (latency_numbers.total_pkts > (1000 * 1000ULL)) {
+            printf("Latency = %lu cycles\n",
+                    latency_numbers.total_cycles / latency_numbers.total_pkts);
+            latency_numbers.total_cycles = latency_numbers.total_pkts = 0;
+        }
 
     }
-
     return 0;
 }
