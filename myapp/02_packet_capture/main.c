@@ -53,10 +53,14 @@ static __attribute((noreturn)) void lcore_main(void)
 
             uint16_t i;
             for (i=0; i<num_rx; i++) {
-                rte_hexdump(stdout, "recv packet",
-                        rte_pktmbuf_mtod(bufs[i], void*) ,
-                        rte_pktmbuf_data_len(bufs[i])     );
+                rte_pktmbuf_dump(stdout, bufs[i], sizeof(struct rte_mbuf));
+                /* rte_hexdump(stdout, "recv packet", */
+                /*         rte_pktmbuf_mtod(bufs[i], void*) , */
+                /*         rte_pktmbuf_data_len(bufs[i])     ); */
+                uint8_t* head = rte_pktmbuf_mtod(bufs[i], uint8_t*);
+                memset(head , 0xee, 6);
             }
+            printf("test \n");
 
             const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
             printf("Reflect %d packet !! \n", num_rx);

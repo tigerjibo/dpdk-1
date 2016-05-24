@@ -28,8 +28,15 @@ static const struct rte_eth_conf port_conf_default = {
     .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
 };
 
-static __attribute((noreturn)) void lcore_main(void)
+
+static __attribute((noreturn)) void lcore_main(struct rte_mempool* mbuf_pool)
 {
+    uint8_t raw[] = { 
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x08, 0x06, 0x00, 0x01,
+        0x08, 0x00, 0x06, 0x04, 0x00, 0x01, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x0a, 0xd2, 0x7c, 0x01,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0xd2, 0x7c, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
     const uint8_t num_ports = rte_eth_dev_count();
 
     uint8_t port;
@@ -39,37 +46,39 @@ static __attribute((noreturn)) void lcore_main(void)
                     "polling thread. \n\tPerformance will "
                     "not be optimal. \n ", port);
     }
-    printf("\nCore %u forwarding packets. [Ctrl+C to quit]\n", rte_lcore_id());
+    printf("\nCore %u Sending packets. [Ctrl+C to quit]\n", rte_lcore_id());
 
+
+    struct rte_mbuf* send_buffer = rte_pktmbuf_alloc(mbuf_pool);
+    if (send_buffer == NULL) {
+		rte_exit(EXIT_FAILURE, "rte_pktmbuf_alloc() failed\n");
+    }
+
+    /* printf("print send_buffer's room size: %d \n", */
+    /*         rte_pktmbuf_data_room_size(mbuf_pool)); */
+
+
+    memcpy(rte_pktmbuf_mtod(send_buffer, void*), raw, sizeof raw);
+    send_buffer->nb_segs = 1;
+    send_buffer->next = NULL;
+    send_buffer->pkt_len  = (uint16_t)sizeof(raw);
+    send_buffer->data_len = (uint16_t)sizeof(raw);
+
+    rte_pktmbuf_dump(stdout, send_buffer, sizeof(struct rte_mbuf));
 
     for (;;) {
-        
+
         for (port=0; port<num_ports; port++) {
-            struct rte_mbuf* bufs[BURST_SIZE];
-            const uint16_t num_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
-
-            if (unlikely(num_rx == 0))
-                continue;
-
-            uint16_t i;
-            for (i=0; i<num_rx; i++) {
-                rte_hexdump(stdout, "recv packet",
-                        rte_pktmbuf_mtod(bufs[i], void*) ,
-                        rte_pktmbuf_data_len(bufs[i])     );
+            const uint16_t num_tx = rte_eth_tx_burst(port, 0, &send_buffer, 1);
+            if (num_tx < 1) {
+                printf("failed sending \n");
             }
-
-            const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
-            printf("Reflect %d packet !! \n", num_rx);
-            if (unlikely(num_tx < num_rx)) {
-                uint16_t buf;
-                for (buf=num_tx; buf<num_rx; buf++)
-                    rte_pktmbuf_free(bufs[buf]);
-            }
-
-            printf("\n\n");
-
+            printf("send %u packet \n", num_tx);
         }
+        exit(-1);
+
     }
+    rte_pktmbuf_free(send_buffer);
 }
 
 
@@ -125,7 +134,9 @@ static int port_init(uint8_t port, struct rte_mempool* mbuf_pool)
 
 
 int main(int argc, char** argv)
-{
+{   
+
+
 
 	int ret = rte_eal_init(argc, argv);
 	if (ret < 0)
@@ -155,11 +166,8 @@ int main(int argc, char** argv)
     if (rte_lcore_count() > 1) 
         printf("WARNING: Too many lcores enabled. Only 1 used. \n");
 
-    lcore_main();
+    lcore_main(mbuf_pool);
 
-    rte_log(RTE_LOG_DEBUG, RTE_LOGTYPE_EAL, "test test \n");
-
-    DEBUG("finish");
     return 0;
 }
 
