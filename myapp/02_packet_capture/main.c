@@ -60,7 +60,7 @@ static __attribute((noreturn)) void lcore_main(void)
                 uint8_t* head = rte_pktmbuf_mtod(bufs[i], uint8_t*);
                 memset(head , 0xee, 6);
             }
-            printf("test \n");
+
 
             const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
             printf("Reflect %d packet !! \n", num_rx);
