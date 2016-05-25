@@ -21,16 +21,12 @@
 #include <sys/socket.h>
 
 
-
-#define DEBUG(s) fprintf(stderr, "[%s:%d] %s\n", __func__, __LINE__, s)
-
 static struct {
     uint64_t total_cycles;
     uint64_t total_pkts;
 } latency_numbers;
 
 const char* dev = "enp3s0"; // IntelNIC
-
 
 
 int main(int argc, char** argv)

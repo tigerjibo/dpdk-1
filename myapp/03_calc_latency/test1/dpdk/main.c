@@ -12,16 +12,12 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-
-#define DEBUG(s) fprintf(stderr, "[%s:%d] %s\n", __func__, __LINE__, s)
-
 #define RX_RING_SIZE 128
 #define TX_RING_SIZE 512
 
 #define NUM_MBUFS       8191
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE      32
-
 
 
 static const struct rte_eth_conf port_conf_default = {
@@ -34,10 +30,9 @@ static struct {
 } latency_numbers;
 
 
-
 static uint16_t add_timestamps(uint8_t port __rte_unused, uint16_t qidx __rte_unused,
-		struct rte_mbuf **pkts, uint16_t nb_pkts,
-		uint16_t max_pkts __rte_unused, void *_ __rte_unused)
+        struct rte_mbuf **pkts, uint16_t nb_pkts,
+        uint16_t max_pkts __rte_unused, void *_ __rte_unused)
 {
 	unsigned i;
 	uint64_t now = rte_rdtsc();
@@ -49,7 +44,7 @@ static uint16_t add_timestamps(uint8_t port __rte_unused, uint16_t qidx __rte_un
 }
 
 static uint16_t calc_latency(uint8_t port __rte_unused, uint16_t qidx __rte_unused,
-		struct rte_mbuf **pkts, uint16_t nb_pkts, void *_ __rte_unused)
+        struct rte_mbuf **pkts, uint16_t nb_pkts, void *_ __rte_unused)
 {
 	uint64_t cycles = 0;
 	uint64_t now = rte_rdtsc();
@@ -62,9 +57,9 @@ static uint16_t calc_latency(uint8_t port __rte_unused, uint16_t qidx __rte_unus
 	latency_numbers.total_pkts += nb_pkts;
 
 	if (latency_numbers.total_pkts > (1000 * 1000ULL)) {
-		printf("Latency = %lu cycles\n",
-		    latency_numbers.total_cycles / latency_numbers.total_pkts);
-		latency_numbers.total_cycles = latency_numbers.total_pkts = 0;
+        /* printf("Latency = %lu cycles\n", */
+        /*         latency_numbers.total_cycles / latency_numbers.total_pkts); */
+        latency_numbers.total_cycles = latency_numbers.total_pkts = 0;
 	}
 	return nb_pkts;
 }
@@ -151,18 +146,15 @@ static int port_init(uint8_t port, struct rte_mempool* mbuf_pool)
 	rte_eth_promiscuous_enable(port);
 	rte_eth_add_rx_callback(port, 0, add_timestamps, NULL);
 	rte_eth_add_tx_callback(port, 0, calc_latency, NULL);
-
     return 0;
 }
 
 
 int main(int argc, char** argv)
 {
-
 	int ret = rte_eal_init(argc, argv);
 	if (ret < 0)
-		rte_exit(EXIT_FAILURE, "rte_eal_init() failed\n");
-
+	    rte_exit(EXIT_FAILURE, "rte_eal_init() failed\n");
 
     uint32_t num_ports = rte_eth_dev_count();
     printf("%d ports found  \n", num_ports);
