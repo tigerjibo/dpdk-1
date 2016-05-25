@@ -11,7 +11,6 @@
 #include <rte_cycles.h>
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
-#include <rte_hexdump.h>
 
 
 #define DEBUG(s) fprintf(stderr, "[%s:%d] %s\n", __func__, __LINE__, s)
@@ -24,9 +23,52 @@
 #define BURST_SIZE      32
 
 
+
 static const struct rte_eth_conf port_conf_default = {
     .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
 };
+
+static struct {
+	uint64_t total_cycles;
+	uint64_t total_pkts;
+} latency_numbers;
+
+
+
+static uint16_t add_timestamps(uint8_t port __rte_unused, uint16_t qidx __rte_unused,
+		struct rte_mbuf **pkts, uint16_t nb_pkts,
+		uint16_t max_pkts __rte_unused, void *_ __rte_unused)
+{
+	unsigned i;
+	uint64_t now = rte_rdtsc();
+
+	for (i = 0; i < nb_pkts; i++) {
+		pkts[i]->udata64 = now;
+    }
+	return nb_pkts;
+}
+
+static uint16_t calc_latency(uint8_t port __rte_unused, uint16_t qidx __rte_unused,
+		struct rte_mbuf **pkts, uint16_t nb_pkts, void *_ __rte_unused)
+{
+	uint64_t cycles = 0;
+	uint64_t now = rte_rdtsc();
+	unsigned i;
+
+	for (i = 0; i < nb_pkts; i++) {
+		cycles += now - pkts[i]->udata64;
+    }
+	latency_numbers.total_cycles += cycles;
+	latency_numbers.total_pkts += nb_pkts;
+
+	if (latency_numbers.total_pkts > (1000 * 1000ULL)) {
+		printf("Latency = %lu cycles\n",
+		    latency_numbers.total_cycles / latency_numbers.total_pkts);
+		latency_numbers.total_cycles = latency_numbers.total_pkts = 0;
+	}
+	return nb_pkts;
+}
+
 
 static __attribute((noreturn)) void lcore_main(void)
 {
@@ -43,31 +85,20 @@ static __attribute((noreturn)) void lcore_main(void)
 
 
     for (;;) {
-        
+        struct rte_mbuf* bufs[BURST_SIZE];
         for (port=0; port<num_ports; port++) {
-            struct rte_mbuf* bufs[BURST_SIZE];
             const uint16_t num_rx = rte_eth_rx_burst(port, 0, bufs, BURST_SIZE);
 
             if (unlikely(num_rx == 0))
                 continue;
 
-            uint16_t i;
-            for (i=0; i<num_rx; i++) {
-                rte_hexdump(stdout, "recv packet",
-                        rte_pktmbuf_mtod(bufs[i], void*) ,
-                        rte_pktmbuf_data_len(bufs[i])     );
-            }
-
             const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
-            printf("Reflect %d packet !! \n", num_rx);
+
             if (unlikely(num_tx < num_rx)) {
                 uint16_t buf;
                 for (buf=num_tx; buf<num_rx; buf++)
                     rte_pktmbuf_free(bufs[buf]);
             }
-
-            printf("\n\n");
-
         }
     }
 }
@@ -118,10 +149,11 @@ static int port_init(uint8_t port, struct rte_mempool* mbuf_pool)
             addr.addr_bytes[3], addr.addr_bytes[4]);
 
 	rte_eth_promiscuous_enable(port);
+	rte_eth_add_rx_callback(port, 0, add_timestamps, NULL);
+	rte_eth_add_tx_callback(port, 0, calc_latency, NULL);
 
     return 0;
 }
-
 
 
 int main(int argc, char** argv)
@@ -131,8 +163,6 @@ int main(int argc, char** argv)
 	if (ret < 0)
 		rte_exit(EXIT_FAILURE, "rte_eal_init() failed\n");
 
-    printf("\n\n\n");
-    DEBUG("start");
 
     uint32_t num_ports = rte_eth_dev_count();
     printf("%d ports found  \n", num_ports);
@@ -156,12 +186,9 @@ int main(int argc, char** argv)
         printf("WARNING: Too many lcores enabled. Only 1 used. \n");
 
     lcore_main();
-
-    rte_log(RTE_LOG_DEBUG, RTE_LOGTYPE_EAL, "test test \n");
-
-    DEBUG("finish");
     return 0;
 }
+
 
 
 
