@@ -23,24 +23,20 @@
 #define MBUF_CACHE_SIZE 250
 #define BURST_SIZE      32
 
-static const uint8_t raw[] = { 
+
+static uint8_t raw[] = { 
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x08, 0x06, 0x00, 0x01,
     0x08, 0x00, 0x06, 0x04, 0x00, 0x01, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x0a, 0xd2, 0x7c, 0x01,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0xd2, 0x7c, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 static const struct rte_eth_conf port_conf_default = {
     .rxmode = { .max_rx_pkt_len = ETHER_MAX_LEN }
 };
 
 
-static __attribute((noreturn)) void lcore_main(struct rte_mempool* mbuf_pool)
+static void lcore_main(struct rte_mempool* mbuf_pool)
 {
-    uint8_t raw[] = { 
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x08, 0x06, 0x00, 0x01,
-        0x08, 0x00, 0x06, 0x04, 0x00, 0x01, 0x00, 0x09, 0x0f, 0x09, 0x00, 0x0d, 0x0a, 0xd2, 0x7c, 0x01,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x0a, 0xd2, 0x7c, 0x36, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
     const uint8_t num_ports = rte_eth_dev_count();
 
@@ -59,8 +55,8 @@ static __attribute((noreturn)) void lcore_main(struct rte_mempool* mbuf_pool)
 		rte_exit(EXIT_FAILURE, "rte_pktmbuf_alloc() failed\n");
     }
 
-    /* printf("print send_buffer's room size: %d \n", */
-    /*         rte_pktmbuf_data_room_size(mbuf_pool)); */
+    printf("print send_buffer's room size: %d \n",
+            rte_pktmbuf_data_room_size(mbuf_pool));
 
 
     uint8_t* pkt_pointer = rte_pktmbuf_mtod(send_buffer, uint8_t*);
@@ -72,17 +68,13 @@ static __attribute((noreturn)) void lcore_main(struct rte_mempool* mbuf_pool)
 
     rte_pktmbuf_dump(stdout, send_buffer, sizeof(struct rte_mbuf));
 
-    for (;;) {
-
-        for (port=0; port<num_ports; port++) {
-            const uint16_t num_tx = rte_eth_tx_burst(port, 0, &send_buffer, 1);
-            if (num_tx < 1) {
-                printf("failed sending \n");
-            }
-            printf("send %u packet \n", num_tx);
+    for (port=0; port<num_ports; port++) {
+        printf("before sending \n");
+        const uint16_t num_tx = rte_eth_tx_burst(port, 0, &send_buffer, 1);
+        if (num_tx < 1) {
+            printf("failed sending \n");
         }
-        exit(-1);
-
+        printf("after sending %u packet \n", num_tx);
     }
     rte_pktmbuf_free(send_buffer);
 }
@@ -99,7 +91,7 @@ static int port_init(uint8_t port, struct rte_mempool* mbuf_pool)
     if (port >= rte_eth_dev_count())
         return -1;
 
-    const uint16_t rx_rings = 1;
+    const uint16_t rx_rings = 0;
     const uint16_t tx_rings = 1;
     ret = rte_eth_dev_configure(port, rx_rings, tx_rings, &port_conf);
     if (ret != 0)
