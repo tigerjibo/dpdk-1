@@ -62,8 +62,9 @@ static __attribute((noreturn)) void lcore_main(void)
             }
 
 
-            const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx);
-            printf("Reflect %d packet !! \n", num_rx);
+            const uint16_t num_tx = 0;
+            /* const uint16_t num_tx = rte_eth_tx_burst(port, 0, bufs, num_rx); */
+            /* printf("Reflect %d packet !! \n", num_rx); */
             if (unlikely(num_tx < num_rx)) {
                 uint16_t buf;
                 for (buf=num_tx; buf<num_rx; buf++)

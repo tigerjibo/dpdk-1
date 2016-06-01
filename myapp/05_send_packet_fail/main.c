@@ -70,7 +70,9 @@ static void lcore_main(struct rte_mempool* mbuf_pool)
 
     for (port=0; port<num_ports; port++) {
         printf("before sending \n");
+        rte_delay_ms(100);
         const uint16_t num_tx = rte_eth_tx_burst(port, 0, &send_buffer, 1);
+        rte_delay_ms(100);
         if (num_tx < 1) {
             printf("failed sending \n");
         }
