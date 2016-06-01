@@ -1,4 +1,6 @@
 
+*slank*
+
 # Vagrant depend files
 .vagrant/
 *.map
